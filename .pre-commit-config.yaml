@@ -1,0 +1,30 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+# -------------------- Base --------------------
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+    -   id: trailing-whitespace
+        files: .py$
+        exclude: tests/
+    -   id: end-of-file-fixer
+        files: .py$
+        exclude: tests/
+    -   id: check-added-large-files
+# -------------------- iSort --------------------
+-   repo: https://github.com/PyCQA/isort
+    rev: 5.10.1
+    hooks:
+    -   id: isort
+# -------------------- Flake8 --------------------
+-   repo: https://github.com/PyCQA/flake8
+    rev: 4.0.1
+    hooks:
+    -   id: flake8
+        args: ['--count', '--statistics', '--exit-zero', ' --show-source']
+# -------------------- Manifest --------------------
+-   repo: https://github.com/mgedmin/check-manifest
+    rev: '0.48'
+    hooks:
+    -   id: check-manifest

@@ -1,0 +1,21 @@
+name: deeprec
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pandas
+  - numpy
+  - gensim
+  - tensorflow
+  - keras
+  - matplotlib
+  - dython
+  - seaborn
+  - jupyterlab
+  - scikit-learn
+  - fastparquet
+  - pip:
+      - tensorflow-recommenders
+      - uszipcode
+prefix: /Users/christophersantiago/miniforge3/envs/deeprec
