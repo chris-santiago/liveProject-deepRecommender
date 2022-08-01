@@ -27,10 +27,14 @@ def get_year(text):
     return int(re.findall(r'(19\d{2}|20\d{2})', text)[-1])
 
 
+def clean_genres(genres):
+    return [re.sub(r'[^a-z0-9]+', '', s.lower()) for s in genres]
+
+
 def split_genres(series):
     mlb = MultiLabelBinarizer()
     arr = mlb.fit_transform(series.str.split('|'))
-    return pd.DataFrame(arr, columns=mlb.classes_)
+    return pd.DataFrame(arr, columns=clean_genres(mlb.classes_))
 
 
 def convert_timestamps(series, use_names=True):
