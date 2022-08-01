@@ -19,7 +19,8 @@ def load_data():
 
 
 def get_title(text):
-    return ''.join(re.findall(r"\w+.\s", text)).strip()
+    return text.strip()[:-7]
+    # return ''.join(re.findall(r"\w+.+\s", text)).strip()
 
 
 def get_year(text):
