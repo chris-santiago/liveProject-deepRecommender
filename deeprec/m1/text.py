@@ -76,7 +76,7 @@ def make_metadata(data, write=False):
         else:
             metadata[cat] = data[cat].value_counts(normalize=True).to_dict()
     if write:
-        with open(DATA_DIR.joinpath('medata.json'), 'w') as fp:
+        with open(DATA_DIR.joinpath('metadata.json'), 'w') as fp:
             json.dump(metadata, fp)
     else:
         return metadata
