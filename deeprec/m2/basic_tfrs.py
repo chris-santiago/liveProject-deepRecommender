@@ -5,7 +5,6 @@ import tensorflow as tf
 import tensorflow_recommenders as tfrs
 
 from deeprec import ROOT
-from deeprec.m2.baselines import get_datasets
 
 DATA_DIR = ROOT.joinpath('data')
 
@@ -22,10 +21,20 @@ def make_datasets(cols=['user', 'movie', 'rating']):
     for ds in [train, test]:
         data.append(
             tf.data.Dataset.from_tensor_slices(
-                {k: list(v) for k, v in ds[cols].to_dict().items()}
+                ds[cols].to_dict('list')
             )
         )
     return tuple(data)
+
+
+def make_embedding_block(vocab, embed_dim=32, name=None):
+    return tf.keras.Sequential(
+        layers=[
+            tf.keras.layers.StringLookup(vocabulary=vocab),
+            tf.keras.layers.Embedding(len(vocab) + 1, embed_dim),
+        ],
+        name=name
+    )
 
 
 class TowersModel(tf.keras.Model):
@@ -35,36 +44,26 @@ class TowersModel(tf.keras.Model):
         self.movies = movies
         self.embed_dim = embed_dim
 
-        self.user_model = tf.keras.Sequential(
-            layers=[
-                tf.keras.layers.StringLookup(vocabulary=users),
-                tf.keras.layers.Embedding(len(users)+1, self.embed_dim),
-                tf.keras.layers.Dense(64, activation='relu'),
-                tf.keras.layers.Dense(64, activation='relu'),
-            ]
+        self.user_embeds = make_embedding_block(
+            self.users, embed_dim=self.embed_dim, name='user_embeddings'
         )
-
-        self.movie_model = tf.keras.Sequential(
-            layers=[
-                tf.keras.layers.StringLookup(vocabulary=movies),
-                tf.keras.layers.Embedding(len(movies)+1, self.embed_dim),
-                tf.keras.layers.Dense(64, activation='relu'),
-                tf.keras.layers.Dense(64, activation='relu'),
-            ]
+        self.movie_embeds = make_embedding_block(
+            self.movies, embed_dim=self.embed_dim, name='movie_embeddings'
         )
-
         self.merge_model = tf.keras.Sequential(
             layers=[
+                tf.keras.layers.Dense(64, activation='relu'),
                 tf.keras.layers.Dense(64, activation='relu'),
                 tf.keras.layers.Dense(1),
             ]
         )
 
     def call(self, inputs):
-        user, movie, _ = inputs
-        user_embeds = self.user_model(user)
-        movie_embeds = self.movie_model(movie)
-        return self.merge_model(tf.concat[user_embeds, movie_embeds], axis=1)
+        user = tf.strings.as_string(inputs['user'])
+        movie = tf.strings.as_string(inputs['movie'])
+        user_embeds = self.user_embeds(user)
+        movie_embeds = self.movie_embeds(movie)
+        return self.merge_model(tf.concat([user_embeds, movie_embeds], axis=-1))
 
 
 class TowersRecommender(tfrs.models.Model):
@@ -86,9 +85,24 @@ class TowersRecommender(tfrs.models.Model):
 
 if __name__ == '__main__':
     cols = ['user', 'movie', 'rating']
-    train, test = make_datasets(cols)
+    tf_train, tf_test = make_datasets(cols)
     meta = load_metadata()
 
     users = list(meta['user'].keys())
     movies = list(meta['movie'].keys())
-    model = TowersModel(users, movies)
+    model = TowersModel(users, movies, embed_dim=32)
+    rec = TowersRecommender(model)
+
+    learning_rate = 1e-3
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor='loss', restore_best_weights=True, patience=5
+    )
+
+    cached_train = tf_train.shuffle(10_000).batch(2048).cache()
+    rec.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate))
+    rec.fit(cached_train, epochs=100, callbacks=[early_stopping])
+
+    cached_test = tf_test.batch(4096).cache()
+    rec.evaluate(cached_test, return_dict=True)
+
+    rec.model.save_weights(DATA_DIR.joinpath('base_rec/'))

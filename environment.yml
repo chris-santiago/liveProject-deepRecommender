@@ -7,15 +7,17 @@ dependencies:
   - pandas
   - numpy
   - gensim
-  - tensorflow
-  - keras
   - matplotlib
   - dython
   - seaborn
   - jupyterlab
   - scikit-learn
   - fastparquet
+  - graphviz
   - pip:
+      - tensorflow
+      - keras
       - tensorflow-recommenders
       - uszipcode
+      - pydot
 prefix: /Users/christophersantiago/miniforge3/envs/deeprec
