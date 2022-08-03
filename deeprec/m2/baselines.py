@@ -68,13 +68,18 @@ class MeanValueEstimator(BaseEstimator, RegressorMixin):
         return np.repeat(self.mean_, repeats=len(X))
 
 
-if __name__ == '__main__':
+def get_datasets():
     train = pd.read_parquet(DATA_DIR.joinpath('train.parq.gzip'))
     test = pd.read_parquet(DATA_DIR.joinpath('test.parq.gzip'))
     X_cols = [c for c in train.columns if c != 'rating']
 
     X_train, y_train = train[X_cols], train['rating']
     X_test, y_test = test[X_cols], test['rating']
+    return X_train, y_train, X_test, y_test
+
+
+if __name__ == '__main__':
+    X_train, y_train, X_test, y_test = get_datasets()
 
     for est in [
         RandomGuessEstimator(), WeightedSamplingEstimator(),
