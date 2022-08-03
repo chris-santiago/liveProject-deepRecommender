@@ -63,7 +63,7 @@ def expand_zips(series, engine):
     return df
 
 
-def preprocess(dd, use_names=True):
+def preprocess(dd, use_names=True, na_val='XX'):
     search = SearchEngine()
 
     movies = pd.DataFrame({
@@ -75,7 +75,7 @@ def preprocess(dd, use_names=True):
     ratings = dd['ratings'].iloc[:, :-1].join(convert_timestamps(dd['ratings']['timestamp'], use_names))
     users = dd['users'].iloc[:, :-1].join(expand_zips(dd['users']['zip'], search))
 
-    return ratings.merge(users, on='user').merge(movies, on='movie')
+    return ratings.merge(users, on='user').merge(movies, on='movie').fillna(na_val)
 
 
 if __name__ == '__main__':
