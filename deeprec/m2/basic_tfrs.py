@@ -61,10 +61,27 @@ class TowersModel(tf.keras.Model):
         )
 
     def call(self, inputs):
-        user, movie = inputs
+        user, movie, _ = inputs
         user_embeds = self.user_model(user)
         movie_embeds = self.movie_model(movie)
         return self.merge_model(tf.concat[user_embeds, movie_embeds], axis=1)
+
+
+class TowersRecommender(tfrs.models.Model):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+        self.task = tfrs.tasks.Ranking(
+            loss=tf.keras.losses.MeanSquaredError(),
+            metrics=[tf.keras.metrics.RootMeanSquaredError()]
+        )
+
+    def call(self, inputs):
+        return self.model(inputs)
+
+    def compute_loss(self, inputs, training: bool = False) -> tf.Tensor:
+        return self.task(labels=inputs['rating'], predictions=self(inputs))
 
 
 if __name__ == '__main__':
