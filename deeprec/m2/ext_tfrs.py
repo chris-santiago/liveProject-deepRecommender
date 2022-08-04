@@ -129,7 +129,7 @@ if __name__ == '__main__':
     model = TowersModel(users, movies, occupations, cities, states, embed_dim=16)
     rec = TowersRecommender(model)
 
-    learning_rate = 1e-3
+    learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(1e-3, decay_steps=4096, decay_rate=0.95)
     early_stopping = tf.keras.callbacks.EarlyStopping(
         monitor='loss', restore_best_weights=True, patience=5
     )
