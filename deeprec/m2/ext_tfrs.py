@@ -20,10 +20,11 @@ def make_datasets():
 
 
 class TowersModel(tf.keras.Model):
-    def __init__(self, users, movies, cities, states, embed_dim=32):
+    def __init__(self, users, movies, occupations, cities, states, embed_dim=32):
         super().__init__()
         self.users = users
         self.movies = movies
+        self.occupations = occupations
         self.cities = cities
         self.states = states
         self.embed_dim = embed_dim
@@ -36,19 +37,18 @@ class TowersModel(tf.keras.Model):
         self.days_of_week = [
             'Monday', 'Tuesday', 'Sunday', 'Thursday', 'Wednesday', 'Friday', 'Saturday'
         ]
-
-        # self.title_embeds = tf.keras.Input(shape=(25,), name='title_embeddings')
-        # self.genres = tf.keras.Input(shape=(18,), name='genre_inputs')
-        # self.years = tf.keras.Input(shape=(1,), name='year_inputs')
         self.movie_inputs = tf.keras.layers.Concatenate(axis=-1)
 
         # self.occupations = tf.keras.Input(shape=(1,), name='occupation_inputs')
         # self.hour = tf.keras.Input(shape=(1,), name='hour_inputs')
+        self.occupations = make_embedding_block(
+            self.days_of_week, embed_dim=8, name='occupation_embeddings'
+        )
         self.user_embeds = make_embedding_block(
             self.users, embed_dim=self.embed_dim, name='user_embeddings'
         )
         self.gender = make_embedding_block(
-            ['M', 'F'], embed_dim=2, name='gender_embeddings'
+            ['M', 'F'], embed_dim=4, name='gender_embeddings'
         )
         self.day = make_embedding_block(
             self.days_of_week, embed_dim=4, name='day_embeddings'
@@ -66,7 +66,7 @@ class TowersModel(tf.keras.Model):
 
         self.movie_model = tf.keras.Sequential(
             layers=[
-                tf.keras.layers.Dense(64, activation='relu'),
+                tf.keras.layers.Dense(128, activation='relu'),
                 tf.keras.layers.Dense(64, activation='relu'),
             ],
             name='movie_model'
@@ -74,7 +74,7 @@ class TowersModel(tf.keras.Model):
 
         self.user_model = tf.keras.Sequential(
             layers=[
-                tf.keras.layers.Dense(64, activation='relu'),
+                tf.keras.layers.Dense(128, activation='relu'),
                 tf.keras.layers.Dense(64, activation='relu'),
             ],
             name='movie_model'
@@ -84,7 +84,7 @@ class TowersModel(tf.keras.Model):
         self.merge_model = tf.keras.Sequential(
             layers=[
                 tf.keras.layers.Dense(64, activation='relu'),
-                tf.keras.layers.Dense(64, activation='relu'),
+                tf.keras.layers.Dense(32, activation='relu'),
                 tf.keras.layers.Dense(1),
             ]
         )
@@ -92,15 +92,14 @@ class TowersModel(tf.keras.Model):
     def call(self, inputs):
         # movie tower
         title = inputs['title_embeds']
-        genre = inputs['genres']
-        year = inputs['year']
-        print(year)
+        genre = tf.cast(inputs['genres'], dtype=tf.float64)
+        year = tf.expand_dims(tf.cast(inputs['year'], dtype=tf.float64), axis=1)
         movie_inputs = self.movie_inputs([title, genre, year])
         movie_model = self.movie_model(movie_inputs)
 
         # user tower
-        occupation = tf.strings.as_string(inputs['occupation'])
-        hour = inputs['hour']
+        hour = tf.expand_dims(tf.cast(inputs['hour'], dtype=tf.float64), axis=1)
+        occupation = self.occupations(tf.strings.as_string(inputs['occupation']))
         user = self.user_embeds(tf.strings.as_string(inputs['user']))
         gender = self.gender(inputs['gender'])
         day = self.day(inputs['day_of_week'])
@@ -123,10 +122,11 @@ if __name__ == '__main__':
 
     users = list(meta['user'].keys())
     movies = list(meta['movie'].keys())
+    occupations = list(meta['occupation'].keys())
     cities = list(meta['city'].keys())
     states = list(meta['state'].keys())
 
-    model = TowersModel(users, movies, cities, states, embed_dim=16)
+    model = TowersModel(users, movies, occupations, cities, states, embed_dim=16)
     rec = TowersRecommender(model)
 
     learning_rate = 1e-3
