@@ -1,8 +1,5 @@
-import json
-
 import pandas as pd
 import tensorflow as tf
-import tensorflow_recommenders as tfrs
 
 from deeprec import ROOT
 from deeprec.m2.basic_tfrs import load_metadata, make_embedding_block, TowersRecommender
@@ -15,7 +12,7 @@ def make_datasets():
     test = pd.read_parquet(DATA_DIR.joinpath('test.parq.gzip'))
     data = []
     for ds in [train, test]:
-        dd = ds.iloc[:, 13].to_dict('list')
+        dd = ds.iloc[:, :13].to_dict('list')
         dd.update({'genres': ds.iloc[:, 13:-25].values})
         dd.update({'title_embeds': ds.iloc[:, -25:].values})
         data.append(tf.data.Dataset.from_tensor_slices(dd))
@@ -40,13 +37,13 @@ class TowersModel(tf.keras.Model):
             'Monday', 'Tuesday', 'Sunday', 'Thursday', 'Wednesday', 'Friday', 'Saturday'
         ]
 
-        self.title_embeds = tf.keras.Input(shape=(25,), name='title_embeddings')
-        self.genres = tf.keras.Input(shape=(18,), name='genre_inputs')
-        self.years = tf.keras.Input(shape=(1,), name='year_inputs')
-        self.movie_inputs = tf.keras.Concatenate(axis=-1)
+        # self.title_embeds = tf.keras.Input(shape=(25,), name='title_embeddings')
+        # self.genres = tf.keras.Input(shape=(18,), name='genre_inputs')
+        # self.years = tf.keras.Input(shape=(1,), name='year_inputs')
+        self.movie_inputs = tf.keras.layers.Concatenate(axis=-1)
 
-        self.occupations = tf.keras.Input(shape=(1,), name='occupation_inputs')
-        self.hour = tf.keras.Input(shape=(1,), name='hour_inputs')
+        # self.occupations = tf.keras.Input(shape=(1,), name='occupation_inputs')
+        # self.hour = tf.keras.Input(shape=(1,), name='hour_inputs')
         self.user_embeds = make_embedding_block(
             self.users, embed_dim=self.embed_dim, name='user_embeddings'
         )
@@ -65,7 +62,7 @@ class TowersModel(tf.keras.Model):
         self.state_embeds = make_embedding_block(
             self.states, embed_dim=self.embed_dim, name='state_embeddings'
         )
-        self.user_inputs = tf.keras.Concatenate(axis=-1)
+        self.user_inputs = tf.keras.layers.Concatenate(axis=-1)
 
         self.movie_model = tf.keras.Sequential(
             layers=[
@@ -83,7 +80,7 @@ class TowersModel(tf.keras.Model):
             name='movie_model'
         )
 
-        self.all_inputs = tf.keras.Concatenate(axis=-1)
+        self.all_inputs = tf.keras.layers.Concatenate(axis=-1)
         self.merge_model = tf.keras.Sequential(
             layers=[
                 tf.keras.layers.Dense(64, activation='relu'),
@@ -94,15 +91,16 @@ class TowersModel(tf.keras.Model):
 
     def call(self, inputs):
         # movie tower
-        title = self.title_embeds(inputs['title_embeds'])
-        genre = self.genres(inputs['genres'])
-        year = self.years(inputs['year'])
+        title = inputs['title_embeds']
+        genre = inputs['genres']
+        year = inputs['year']
+        print(year)
         movie_inputs = self.movie_inputs([title, genre, year])
         movie_model = self.movie_model(movie_inputs)
 
         # user tower
-        occupation = self.occupations(tf.strings.as_string(inputs['occupation']))
-        hour = self.hour(inputs['hour'])
+        occupation = tf.strings.as_string(inputs['occupation'])
+        hour = inputs['hour']
         user = self.user_embeds(tf.strings.as_string(inputs['user']))
         gender = self.gender(inputs['gender'])
         day = self.day(inputs['day_of_week'])
