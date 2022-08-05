@@ -80,5 +80,5 @@ def preprocess(dd, use_names=True, na_val='XX'):
 
 if __name__ == '__main__':
     data = load_data()
-    res = preprocess(data)
+    res = preprocess(data, use_names=False)
     res.to_parquet(DATA_DIR.joinpath('dataset.parq.gzip'), compression='gzip')

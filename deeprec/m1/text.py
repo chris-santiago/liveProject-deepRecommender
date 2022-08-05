@@ -40,10 +40,12 @@ def get_embeds(data, model, col='title'):
     )
 
 
-def preprocess(data, model, write_embeds=False):
+def preprocess(data, model, write_embeds=False, dummies=None):
     embeds = get_embeds(data, model)
     if write_embeds:
         embeds.to_parquet(DATA_DIR.joinpath('embeds.parq.gzip'), compression='gzip')
+    if dummies:
+        data = pd.get_dummies(data, columns=dummies)
     return data.drop('title', axis=1).join(embeds)
 
 
