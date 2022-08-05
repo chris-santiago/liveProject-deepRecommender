@@ -12,19 +12,21 @@ def make_datasets():
     test = pd.read_parquet(DATA_DIR.joinpath('test.parq.gzip'))
     data = []
     for ds in [train, test]:
-        dd = ds.iloc[:, :13].to_dict('list')
-        dd.update({'genres': ds.iloc[:, 13:-25].values})
+        dd = ds.iloc[:, :10].to_dict('list')
+        dd.update({'genres': ds.iloc[:, 10:28].values})
+        dd.update({'gender': ds.iloc[:, 28:30].values})
+        dd.update({'age': ds.iloc[:, 30:37].values})
+        dd.update({'occupation': ds.iloc[:, 37:-25].values})
         dd.update({'title_embeds': ds.iloc[:, -25:].values})
         data.append(tf.data.Dataset.from_tensor_slices(dd))
     return tuple(data)
 
 
 class TowersModel(tf.keras.Model):
-    def __init__(self, users, movies, occupations, cities, states, embed_dim=32):
+    def __init__(self, users, movies, cities, states, embed_dim=32):
         super().__init__()
         self.users = users
         self.movies = movies
-        self.occupations = occupations
         self.cities = cities
         self.states = states
         self.embed_dim = embed_dim
@@ -41,21 +43,21 @@ class TowersModel(tf.keras.Model):
 
         # self.occupations = tf.keras.Input(shape=(1,), name='occupation_inputs')
         # self.hour = tf.keras.Input(shape=(1,), name='hour_inputs')
-        self.occupations = make_embedding_block(
-            self.days_of_week, embed_dim=8, name='occupation_embeddings'
-        )
+        # self.occupations = make_embedding_block(
+        #     self.days_of_week, embed_dim=8, name='occupation_embeddings'
+        # )
         self.user_embeds = make_embedding_block(
             self.users, embed_dim=self.embed_dim, name='user_embeddings'
         )
-        self.gender = make_embedding_block(
-            ['M', 'F'], embed_dim=4, name='gender_embeddings'
-        )
-        self.day = make_embedding_block(
-            self.days_of_week, embed_dim=4, name='day_embeddings'
-        )
-        self.month = make_embedding_block(
-            self.months, embed_dim=4, name='month_embeddings'
-        )
+        # self.gender = make_embedding_block(
+        #     ['M', 'F'], embed_dim=4, name='gender_embeddings'
+        # )
+        # self.day = make_embedding_block(
+        #     self.days_of_week, embed_dim=4, name='day_embeddings'
+        # )
+        # self.month = make_embedding_block(
+        #     self.months, embed_dim=4, name='month_embeddings'
+        # )
         self.city_embeds = make_embedding_block(
             self.cities, embed_dim=self.embed_dim, name='city_embeddings'
         )
@@ -83,8 +85,8 @@ class TowersModel(tf.keras.Model):
         self.all_inputs = tf.keras.layers.Concatenate(axis=-1)
         self.merge_model = tf.keras.Sequential(
             layers=[
-                tf.keras.layers.Dense(64, activation='relu'),
-                tf.keras.layers.Dense(32, activation='relu'),
+                tf.keras.layers.Dense(256, activation='relu'),
+                tf.keras.layers.Dense(128, activation='relu'),
                 tf.keras.layers.Dense(1),
             ]
         )
@@ -99,15 +101,16 @@ class TowersModel(tf.keras.Model):
 
         # user tower
         hour = tf.expand_dims(tf.cast(inputs['hour'], dtype=tf.float64), axis=1)
-        occupation = self.occupations(tf.strings.as_string(inputs['occupation']))
+        occupation = tf.cast(inputs['occupation'], dtype=tf.float64)
         user = self.user_embeds(tf.strings.as_string(inputs['user']))
-        gender = self.gender(inputs['gender'])
-        day = self.day(inputs['day_of_week'])
-        month = self.month(inputs['month'])
+        gender = tf.cast(inputs['gender'], dtype=tf.float64)
+        age = tf.cast(inputs['age'], dtype=tf.float64)
+        day = tf.expand_dims(tf.cast(inputs['day_of_week'], dtype=tf.float64), axis=1)
+        month = tf.expand_dims(tf.cast(inputs['month'], dtype=tf.float64), axis=1)
         city = self.city_embeds(inputs['city'])
         state = self.state_embeds(inputs['state'])
         user_inputs = self.user_inputs([
-            occupation, hour, user, gender, day, month, city, state
+            occupation, hour, user, gender, age, day, month, city, state
         ])
         user_model = self.user_model(user_inputs)
 
@@ -122,11 +125,11 @@ if __name__ == '__main__':
 
     users = list(meta['user'].keys())
     movies = list(meta['movie'].keys())
-    occupations = list(meta['occupation'].keys())
+    # occupations = list(meta['occupation'].keys())
     cities = list(meta['city'].keys())
     states = list(meta['state'].keys())
 
-    model = TowersModel(users, movies, occupations, cities, states, embed_dim=16)
+    model = TowersModel(users, movies, cities, states, embed_dim=16)
     rec = TowersRecommender(model)
 
     learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(1e-3, decay_steps=4096, decay_rate=0.95)

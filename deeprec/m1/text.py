@@ -60,10 +60,8 @@ def make_train_test(data, write=False):
         return train, test
 
 
-def make_metadata(data, write=False):
+def make_metadata(data, write=False, cats=['user', 'movie']):
     metadata = defaultdict(dict)
-    cats = ['user', 'movie', 'day_of_week', 'month', 'gender', 'age', 'occupation', 'city', 'state',
-            'zip', 'year']
     for cat in cats:
         if data[cat].nunique() > 25:
             res = data[cat].value_counts(normalize=True)
@@ -89,8 +87,9 @@ if __name__ == '__main__':
     data = pd.read_parquet(file)
 
     model = api.load("glove-twitter-25")
-    final = preprocess(data, model)
+    final = preprocess(data, model, dummies=['gender', 'age', 'occupation'])
     final.to_parquet(DATA_DIR.joinpath('final.parq.gzip'), compression='gzip')
 
     make_train_test(final, write=True)
-    make_metadata(final, write=True)
+    cats = ['user', 'movie', 'city', 'state', 'zip']
+    make_metadata(final, write=True, cats=cats)
