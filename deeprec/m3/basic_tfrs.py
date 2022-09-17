@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow_recommenders as tfrs
@@ -19,6 +20,9 @@ def make_datasets(cols=['user', 'movie', 'rating']):
     test = pd.read_parquet(DATA_DIR.joinpath('test.parq.gzip'))
     data = []
     for ds in [train, test]:
+        # add extra dim
+        for col in ['movie', 'rating']:
+            ds[col] = np.expand_dims(ds[col], 1)
         data.append(
             tf.data.Dataset.from_tensor_slices(
                 ds[cols].to_dict('list')
@@ -105,4 +109,4 @@ if __name__ == '__main__':
     cached_test = tf_test.batch(4096).cache()
     rec.evaluate(cached_test, return_dict=True)
 
-    rec.model.save_weights(DATA_DIR.joinpath('base_rec/m3'))
+    rec.model.save_weights(DATA_DIR.joinpath('base_rec/m3/'))
