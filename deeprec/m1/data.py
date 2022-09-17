@@ -20,7 +20,6 @@ def load_data():
 
 def get_title(text):
     return text.strip()[:-7]
-    # return ''.join(re.findall(r"\w+.+\s", text)).strip()
 
 
 def get_year(text):
@@ -28,7 +27,7 @@ def get_year(text):
 
 
 def clean_genres(genres):
-    return [re.sub(r'[^a-z0-9]+', '', s.lower()) for s in genres]
+    return ['genre_' + re.sub(r'[^a-z0-9]+', '', s.lower()) for s in genres]
 
 
 def split_genres(series):
