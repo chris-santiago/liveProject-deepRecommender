@@ -144,4 +144,11 @@ cython_debug/
 .DS_Store
 
 # User
-/data/dataset.csv
+data/
+!data/README.md
+!data/requirements.txt
+!data/movies.csv
+!data/users.csv
+!data/ratings.csv
+!data/enum.txt
+!data/metadata.json
