@@ -14,6 +14,7 @@ dependencies:
   - scikit-learn
   - fastparquet
   - graphviz
+  - pytorch::pytorch
   - pip:
       - tensorflow
       - keras
