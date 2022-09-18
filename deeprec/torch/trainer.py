@@ -49,8 +49,8 @@ class Trainer:
             total_loss = 0
 
             for inputs, labels in tqdm.tqdm(train_dl, desc='Batch', leave=False):
-                inputs = inputs.to(self.device)
-                labels = labels.to(self.device)
+                # inputs = inputs.to(self.device)
+                # labels = labels.to(self.device)
                 self.optimizer.zero_grad()
 
                 logits = self.model(inputs)
@@ -68,8 +68,8 @@ class Trainer:
                 with torch.no_grad():
                     total_loss = 0
                     for inputs, labels in tqdm.tqdm(valid_dl, desc='Batch', leave=False):
-                        inputs = inputs.to(self.device)
-                        labels = labels.to(self.device)
+                        # inputs = inputs.to(self.device)
+                        # labels = labels.to(self.device)
                         logits = self.model(inputs)
                         loss = self.model.loss_func(logits, labels)
                         total_loss += loss.item()
