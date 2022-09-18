@@ -4,6 +4,7 @@ import tqdm
 
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 import gensim.downloader as api
 from gensim.parsing import preprocess_string, strip_non_alphanum, strip_punctuation, strip_multiple_whitespaces
@@ -51,9 +52,19 @@ def preprocess(data, model, write_embeds=False, dummies=None):
 
 
 def make_train_test(data, write=False):
-    df = data.sort_values(by=['year', 'month', 'hour'])
-    mask = df['year'] > 1999
-    train, test = df[~mask], df[mask]
+    cols = data.columns
+    x_cols = [x for x in data.columns if 'rating' not in x]
+    x = data.loc[:, x_cols]
+    y = data.loc[:, 'rating']
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y,
+        test_size=.1,
+        random_state=429,
+        shuffle=True,
+        stratify=data['rating']
+    )
+    train = pd.DataFrame(pd.concat([x_train, y_train], axis=1), columns=cols)
+    test = pd.DataFrame(pd.concat([x_test, y_test], axis=1), columns=cols)
     if write:
         train.to_parquet(DATA_DIR.joinpath('train.parq.gzip'), compression='gzip')
         test.to_parquet(DATA_DIR.joinpath('test.parq.gzip'), compression='gzip')

@@ -40,8 +40,8 @@ def convert_timestamps(series, use_names=True):
     ts = pd.to_datetime(series, unit='s')
     if use_names:
         return pd.DataFrame(
-            {'hour': ts.dt.hour, 'day_of_week': ts.dt.day_name(), 'month': ts.dt.month_name()})
-    return pd.DataFrame({'hour': ts.dt.hour, 'day_of_week': ts.dt.dayofweek, 'month': ts.dt.month})
+            {'hour': ts.dt.hour, 'day_of_week': ts.dt.day_name(), 'month': ts.dt.month_name(), 'ts': ts})
+    return pd.DataFrame({'hour': ts.dt.hour, 'day_of_week': ts.dt.dayofweek, 'month': ts.dt.month, 'ts': ts})
 
 
 def std_zip(zipcode):
