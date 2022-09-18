@@ -42,7 +42,7 @@ class Trainer:
             self.writer.add_scalar(f'{mode}_{metric}', score, epoch)
             self.score_funcs[metric].reset()
 
-    def fit(self, train_dl, valid_dl=None):
+    def fit(self, train_dl, valid_dl=None, verbose=False):
         for epoch in tqdm.tqdm(range(self.epochs), desc='Epoch', leave=True):
             self.results['epoch'].append(epoch)
             self.model.train()
@@ -94,6 +94,9 @@ class Trainer:
                     },
                     self.checkpoint_file
                 )
+
+            if verbose:
+                print(self.results)
 
         self.writer.flush()
         self.writer.close()
