@@ -152,3 +152,4 @@ data/
 !data/ratings.csv
 !data/enum.txt
 !data/metadata.json
+runs/

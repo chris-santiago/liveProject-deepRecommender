@@ -15,6 +15,9 @@ dependencies:
   - fastparquet
   - graphviz
   - pytorch::pytorch
+  - tqdm
+  - ipywidgets
+  - torchmetrics
   - pip:
       - tensorflow
       - keras
